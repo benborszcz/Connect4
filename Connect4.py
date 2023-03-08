@@ -1,7 +1,6 @@
 
 import random
 import numpy as np
-import copy
 
 class Board:
     tiles = [[0,0,0,0,0,0,0],
