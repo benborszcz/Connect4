@@ -1,4 +1,8 @@
 
+import random
+import numpy as np
+import copy
+
 class Board:
     tiles = [[0,0,0,0,0,0,0],
              [0,0,0,0,0,0,0],
@@ -19,7 +23,7 @@ class Board:
                 if self.tiles[i][j] == 1:
                     add = " O "
                 elif self.tiles[i][j] == -1:
-                    add = " 0 "
+                    add = " X "
                 ret = ret + add
                 ret = ret + "|"
                 count+=1
@@ -106,82 +110,68 @@ class Board:
 class MinimaxPlayer:
     def __init__(self, key):
         self.key = key
+        self.rows = 6
+        self.cols = 7
+        self.depth = 7
+    
     def move(self, board):
-        bestMove = None
-        bestVal = -100000
-        count = 0
-        for i in range(7):
+        pos_values = [-1000000, -1000000, -1000000, -1000000, -1000000, -1000000, -1000000]
+        alpha = -1000000
+        beta = 1000000
+        for i in range(self.cols):
             if board.tiles[0][i] == 0:
                 board.drop_piece(i, self.key)
-                value = self.minimax(board, 0, False, -10000, 10000)
-                print("DEBUG @move: "+str(value)+" loc: "+str(count+1))
-                if bestVal < value:
-                    bestMove = count
-                    bestVal = value
+                value = self.minimax(board, self.depth-1, alpha, beta, False)+self.depth
+                pos_values[i] = value
                 board.remove_piece(i)
-            count+=1
-        board.drop_piece(bestMove, self.key)
+
+        print(pos_values)
         
-    def minimax(self, board, depth, isMaximizingPlayer, alpha, beta):
-        if board.check_for_win(1):
-            ret = 100*self.key
-            if ret < 0:
-                ret+=depth
-            else:
-                ret-=depth
-            return ret
-        if board.check_for_win(-1):
-            ret = -100*self.key
-            if ret < 0:
-                ret+=depth
-            else:
-                ret-=depth
-            return ret
-        if depth > 4 and False:
-            ret = 0
-            if board.check_for_3(1):
-                ret+=(30)*self.key
-            if board.check_for_3(-1):
-                ret+=(-30)*self.key
-            return ret
-        if board.is_move_left() == False or depth > 6:
-            return 0;
+        positions = [0]
+        for i, val in enumerate(pos_values):
+            if i == 0: continue
+            if val > pos_values[positions[0]]:
+                positions = [i]
+            elif val == pos_values[positions[0]]:
+                positions.append(i)
+
+        print(positions)
+        board.drop_piece(random.choice(positions), self.key)
+        
+    def minimax(self, board, depth, alpha, beta, isMaximizingPlayer):
+        #initial checks
+        if board.check_for_win(self.key):
+            return 10000
+        if board.check_for_win(-self.key):
+            return -10000
+        if depth == 0 or not board.is_move_left():
+            return 0
+
         if isMaximizingPlayer:
-            bestVal = -100000
-            count = 0
-            for i in range(7):
+            best_val = -1000000
+            for i in range(self.cols):
                 if board.tiles[0][i] == 0:
                     board.drop_piece(i, self.key)
-                    value = self.minimax(board, depth+1, False, alpha, beta)
-                    bestVal = max(bestVal, value)
+                    value = self.minimax(board, depth-1, alpha, beta, False)+depth
+                    best_val = max(best_val, value)
                     board.remove_piece(i)
+                    alpha = max(alpha, best_val)
+                if beta <= alpha:
+                    break
 
-                    if bestVal >= beta:
-                        return bestVal
-
-                    if bestVal > alpha:
-                        alpha = bestVal
-                count+=1
-            return bestVal
         else:
-            bestVal = 100000
-            count = 0
-            for i in range(7):
+            best_val = 1000000
+            for i in range(self.cols):
                 if board.tiles[0][i] == 0:
-                    board.drop_piece(i, self.key*-1)
-                    value = self.minimax(board, depth+1, True, alpha, beta)
-                    bestVal = min(bestVal, value)
+                    board.drop_piece(i, -self.key)
+                    value = self.minimax(board, depth-1, alpha, beta, True)-depth
+                    best_val = min(best_val, value)
                     board.remove_piece(i)
-
-                    if bestVal <= alpha:
-                        return bestVal
-
-                    if bestVal < beta:
-                        beta = bestVal
-
-
-                count+=1
-            return bestVal
+                    beta = min(beta, best_val)
+                if beta <= alpha:
+                    break
+        
+        return best_val
 
 
 class HumanPlayer:
