@@ -1,205 +1,156 @@
+import sys
 
-import random
-import numpy as np
+class ConnectFour:
+    def __init__(self, rows=6, columns=7):
+        self.rows = rows
+        self.columns = columns
+        self.board = [[0] * columns for _ in range(rows)]
 
-class Board:
-    tiles = [[0,0,0,0,0,0,0],
-             [0,0,0,0,0,0,0],
-             [0,0,0,0,0,0,0],
-             [0,0,0,0,0,0,0],
-             [0,0,0,0,0,0,0],
-             [0,0,0,0,0,0,0]]
-    
-    def toString(self):
-        ret = ""
-        count = 0
-        ret = ret + "  1   2   3   4   5   6   7  "
-        ret = ret + "\n-----------------------------\n"
-        for i in range(6):
-            ret = ret + "|"
-            for j in range(7):
-                add = "   "
-                if self.tiles[i][j] == 1:
-                    add = " O "
-                elif self.tiles[i][j] == -1:
-                    add = " X "
-                ret = ret + add
-                ret = ret + "|"
-                count+=1
-            ret = ret + "\n-----------------------------\n"
-        return ret
-
-    def check_for_win(self, key):
-        #horizontalCheck 
-        for j in range(len(self.tiles[0])-3):
-            for i in range(len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i][j+1] == key and self.tiles[i][j+2] == key and self.tiles[i][j+3] == key:
-                    return True
-                          
-        #verticalCheck    
-        for i in range(len(self.tiles)-3):
-            for j in range(len(self.tiles[0])):
-                if self.tiles[i][j] == key and self.tiles[i+1][j] == key and self.tiles[i+2][j] == key and self.tiles[i+3][j] == key:
-                    return True
-
-        #ascendingDiagonalCheck
-        for j in range(len(self.tiles[0])-3):
-            for i in range(3, len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i-1][j+1] == key and self.tiles[i-2][j+2] == key and self.tiles[i-3][j+3] == key:
-                    return True
-        
-        #descendingDiagonalCheck
-        for j in range(3,len(self.tiles[0])):
-            for i in range(3, len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i-1][j-1] == key and self.tiles[i-2][j-2] == key and self.tiles[i-3][j-3] == key:
-                    return True
-
-        return False
-    
-    def check_for_3(self, key):
-        #horizontalCheck 
-        for j in range(len(self.tiles[0])-2):
-            for i in range(len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i][j+1] == key and self.tiles[i][j+2] == key:
-                    return True
-                          
-        #verticalCheck    
-        for i in range(len(self.tiles)-2):
-            for j in range(len(self.tiles[0])):
-                if self.tiles[i][j] == key and self.tiles[i+1][j] == key and self.tiles[i+2][j] == key:
-                    return True
-
-        #ascendingDiagonalCheck
-        for j in range(len(self.tiles[0])-2):
-            for i in range(2, len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i-1][j+1] == key and self.tiles[i-2][j+2] == key:
-                    return True
-        
-        #descendingDiagonalCheck
-        for j in range(2,len(self.tiles[0])):
-            for i in range(2, len(self.tiles)):
-                if self.tiles[i][j] == key and self.tiles[i-1][j-1] == key and self.tiles[i-2][j-2] == key:
-                    return True
-
-        return False     
-
-    def is_move_left(self):
-        for i in range(7):
-            if self.tiles[0][i] == 0:
+    def drop_piece(self, column, player):
+        for row in reversed(self.board):
+            if row[column] == 0:
+                row[column] = player
                 return True
         return False
 
-    def drop_piece(self, loc, key):
-        i = 0
-        while self.tiles[i][loc] == 0:
-            if i!=0:
-                self.tiles[i-1][loc] = 0
-            self.tiles[i][loc] = key
-            i+=1
-            if i == 6:
-                break
+    def is_full(self):
+        return all(cell != 0 for row in self.board for cell in row)
 
-    def remove_piece(self, loc):
-        i = 0
-        while self.tiles[i][loc] == 0:
-            i+=1
-        self.tiles[i][loc] = 0
-            
+    def has_won(self, player):
+        for row in range(self.rows):
+            for col in range(self.columns):
+                if self.check_for_win(row, col, player):
+                    return True
+        return False
 
-class MinimaxPlayer:
-    def __init__(self, key):
-        self.key = key
-        self.rows = 6
-        self.cols = 7
-        self.depth = 7
-    
-    def move(self, board):
-        pos_values = [-1000000, -1000000, -1000000, -1000000, -1000000, -1000000, -1000000]
-        alpha = -1000000
-        beta = 1000000
-        for i in range(self.cols):
-            if board.tiles[0][i] == 0:
-                board.drop_piece(i, self.key)
-                value = self.minimax(board, self.depth-1, alpha, beta, False)+self.depth
-                pos_values[i] = value
-                board.remove_piece(i)
+    def check_for_win(self, row, col, player):
+        if col <= self.columns - 4:
+            if all(self.board[row][col + i] == player for i in range(4)):
+                return True
+        if row <= self.rows - 4:
+            if all(self.board[row + i][col] == player for i in range(4)):
+                return True
+        if col <= self.columns - 4 and row <= self.rows - 4:
+            if all(self.board[row + i][col + i] == player for i in range(4)):
+                return True
+        if col >= 3 and row <= self.rows - 4:
+            if all(self.board[row + i][col - i] == player for i in range(4)):
+                return True
+        return False
 
-        print(pos_values)
-        
-        positions = [0]
-        for i, val in enumerate(pos_values):
-            if i == 0: continue
-            if val > pos_values[positions[0]]:
-                positions = [i]
-            elif val == pos_values[positions[0]]:
-                positions.append(i)
+    def get_legal_moves(self):
+        return [col for col in range(self.columns) if self.board[0][col] == 0]
 
-        print(positions)
-        board.drop_piece(random.choice(positions), self.key)
-        
-    def minimax(self, board, depth, alpha, beta, isMaximizingPlayer):
-        #initial checks
-        if board.check_for_win(self.key):
-            return 10000
-        if board.check_for_win(-self.key):
-            return -10000
-        if depth == 0 or not board.is_move_left():
+    def copy(self):
+        new_game = ConnectFour(self.rows, self.columns)
+        new_game.board = [row.copy() for row in self.board]
+        return new_game
+
+
+class MinimaxAI:
+    def __init__(self, depth, player=1):
+        self.depth = depth
+        self.player = player
+
+    def minimax(self, game, depth, maximizing_player):
+        if depth == 0 or game.is_full() or game.has_won(self.player) or game.has_won(-self.player):
+            return self.evaluate_board(game)
+
+        if maximizing_player:
+            max_score = float('-inf')
+            for move in game.get_legal_moves():
+                new_game = game.copy()
+                new_game.drop_piece(move, self.player)
+                score = self.minimax(new_game, depth - 1, False)
+                max_score = max(max_score, score)
+            return max_score
+        else:
+            min_score = float('inf')
+            for move in game.get_legal_moves():
+                new_game = game.copy()
+                new_game.drop_piece(move, -self.player)
+                score = self.minimax(new_game, depth - 1, True)
+                min_score = min(min_score, score)
+            return min_score
+
+    def find_best_move(self, game):
+        best_score = float('-inf')
+        best_move = -1
+
+        moves = [-1000000 for _ in range(game.columns)]
+
+        for move in game.get_legal_moves():
+            new_game = game.copy()
+            new_game.drop_piece(move, self.player)
+            score = self.minimax(new_game, self.depth - 1, False)
+            moves[move] = score
+            if score > best_score:
+                best_score = score
+                best_move = move
+
+        print(moves)
+
+        return best_move + 1
+
+    def evaluate_board(self, game):
+        if game.has_won(self.player):
+            return 100
+        elif game.has_won(-self.player):
+            return -100
+        else:
             return 0
 
-        if isMaximizingPlayer:
-            best_val = -1000000
-            for i in range(self.cols):
-                if board.tiles[0][i] == 0:
-                    board.drop_piece(i, self.key)
-                    value = self.minimax(board, depth-1, alpha, beta, False)+depth
-                    best_val = max(best_val, value)
-                    board.remove_piece(i)
-                    alpha = max(alpha, best_val)
-                if beta <= alpha:
-                    break
 
+
+
+#-----------------------------------------------------------
+
+game = ConnectFour()
+
+
+def print_board(board):
+    print(" " + "   ".join(str(i+1) for i in range(game.columns)))
+    print("-" * (game.columns * 4 - 1))
+    for row in board:
+        row_str = "|".join(" X " if cell == 1 else " O " if cell == -1 else "   " for cell in row)
+        print(row_str)
+        print("-" * (game.columns * 4 - 1))
+
+
+current_player = 1
+human_player = 1
+ai_player = -1 
+minimax_ai = MinimaxAI(depth=4, player=ai_player)
+
+
+print("Welcome to Connect Four!")
+print_board(game.board)
+
+while not game.is_full():
+    try:
+        column = -1
+        if current_player == human_player:
+            column = int(input(f"Player {current_player}, choose a column to drop your piece (1-{game.columns}): "))
         else:
-            best_val = 1000000
-            for i in range(self.cols):
-                if board.tiles[0][i] == 0:
-                    board.drop_piece(i, -self.key)
-                    value = self.minimax(board, depth-1, alpha, beta, True)-depth
-                    best_val = min(best_val, value)
-                    board.remove_piece(i)
-                    beta = min(beta, best_val)
-                if beta <= alpha:
-                    break
-        
-        return best_val
+            column = minimax_ai.find_best_move(game)
 
+        if column < 1 or column > game.columns:
+            print("Invalid column, please choose a column between 1 and", game.columns)
+            continue
 
-class HumanPlayer:
-    def __init__(self, key):
-        self.key = key
-    def move(self, board):
-        while True:
-            move = int(input("Enter Move (1-7): "))
-            if board.tiles[0][move-1] == 0:
-                board.drop_piece(move-1, self.key)
-                break
+        if not game.drop_piece(column-1, current_player):
+            print("This column is full, please choose another one.")
+            continue
 
+        print_board(game.board)
 
-p1 = MinimaxPlayer(1)
-p2 = HumanPlayer(-1)
-board = Board()
-print(board.toString())
-while True:
-    p1.move(board)
-    win = board.check_for_win(1)
-    print(board.toString())
-    if win:
-        print(1)
-        break
-    p2.move(board)
-    win = board.check_for_win(-1)
-    print(board.toString())
-    if win:
-        print(2)
-        break
+        if game.has_won(current_player):
+            print(f"Congratulations, Player {current_player} has won!")
+            break
 
+        current_player *= -1
 
+    except ValueError:
+        print("Invalid input, please enter a number between 1 and", game.columns)
+else:
+    print("It's a draw!")
