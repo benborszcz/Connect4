@@ -120,7 +120,7 @@ def print_board(board):
 current_player = 1
 human_player = 1
 ai_player = -1 
-minimax_ai = MinimaxAI(depth=4, player=ai_player)
+minimax_ai = MinimaxAI(depth=2, player=ai_player)
 
 
 print("Welcome to Connect Four!")
